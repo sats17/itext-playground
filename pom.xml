@@ -30,6 +30,23 @@
     </dependencyManagement>
 
     <dependencies>
+            <!-- iText 7 kernel -->
+            <dependency>
+                <groupId>com.itextpdf</groupId>
+                <artifactId>kernel</artifactId>
+                <version>7.2.5</version>
+            </dependency>
+
+            <!-- iText layout (optional, but useful) -->
+            <dependency>
+                <groupId>com.itextpdf</groupId>
+                <artifactId>layout</artifactId>
+                <version>7.2.5</version>
+            </dependency>
+
+
+
+
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-arc</artifactId>
