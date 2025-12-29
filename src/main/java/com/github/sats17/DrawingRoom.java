@@ -8,6 +8,13 @@ import java.io.File;
 
 public class DrawingRoom {
 
+    public static float metersToPoints(double meters) {
+        final double inches = meters * 39.3701;
+        final double points = inches * 72;
+        return (float) points;
+    }
+
+
     public static void main(String[] args) throws Exception {
 
         String out = "drawing-room.pdf";
@@ -22,37 +29,83 @@ public class DrawingRoom {
         float pageWidth = PageSize.A4.getWidth();   // 595
         float pageHeight = PageSize.A4.getHeight(); // 842
 
-        // ---- FLOOR PLAN (POINTS) ----
-        float planWidth = 79370f;   // 28 m
-        float planHeight = 62362f;  // 22 m
+        // ---- FLOOR PLAN (meters) ----
+        float roomWidth = 6.09f;   // 6 meters
+        float roomHeight = 4.26f;  // 4 meters
 
-        float widthRatio = planWidth / pageWidth;
-        float heightRatio = planHeight / pageHeight;
+        float hallHeight = roomHeight;
+        float hallWidth = roomWidth / 3;
+
+        float kitchenHeight = roomHeight;
+        float kitchenWidth = roomWidth / 3;
+
+        float bedRoomHeight = roomHeight / 2;
+        float bedRoomWidth = roomWidth / 3;
+
+
+        float roomWidthInPoints = metersToPoints(roomWidth);
+        float roomHeightInPoints = metersToPoints(roomHeight);
+
+        float hallHeightInPoints = metersToPoints(hallHeight);
+        float hallWidthInPoints = metersToPoints(hallWidth);
+
+        float kitchenHeightInPoints = metersToPoints(kitchenHeight);
+        float kitchenWidthInPoints = metersToPoints(kitchenWidth);
+
+        float bedRoomHeightInPoints = metersToPoints(bedRoomHeight);
+        float bedRoomWidthInPoints = metersToPoints(bedRoomWidth);
+
+        float widthRatio = roomWidthInPoints / pageWidth;
+        float heightRatio = roomHeightInPoints / pageHeight;
         float scale = 1f / Math.max(widthRatio, heightRatio);
 
-        float scaledWidth = planWidth * scale;
-        float scaledHeight = planHeight * scale;
+        // ---- DRAW OUTER BOUNDARY ----
+        float scaledWidth = roomWidthInPoints * scale;
+        float scaledHeight = roomHeightInPoints * scale;
 
         float offsetX = (pageWidth - scaledWidth) / 2f;
         float offsetY = (pageHeight - scaledHeight) / 2f;
 
-        // ---- DRAW OUTER BOUNDARY ----
         canvas.rectangle(offsetX, offsetY, scaledWidth, scaledHeight);
         canvas.stroke();
+        // Done drawing outer boundary
 
-        // ---- ROOM ----
-        float roomX = 17008f; // 6 m
-        float roomY = 11339f; // 4 m
-        float roomW = 14173f; // 5 m
-        float roomH = 11339f; // 4 m
+        // Draw hall boundary
+        float scaledHallWidth = hallWidthInPoints * scale;
+        float scaledHallHeight = hallHeightInPoints * scale;
 
-        canvas.rectangle(
-                offsetX + roomX * scale,
-                offsetY + roomY * scale,
-                roomW * scale,
-                roomH * scale
-        );
+        canvas.rectangle(offsetX, offsetY, scaledHallWidth, scaledHallHeight);
         canvas.stroke();
+        // Done drawing hall
+
+        // Draw kitchen boundary
+        float kitchenOffsetX = offsetX + scaledHallWidth;
+        float kitchenOffsetY = offsetY;
+
+        float scaledKitchenWidth = kitchenWidthInPoints * scale;
+        float scaledKitchenHeight = kitchenHeightInPoints * scale;
+
+        canvas.rectangle(kitchenOffsetX, kitchenOffsetY, scaledKitchenWidth, scaledKitchenHeight);
+        canvas.stroke();
+        // Done kitchen boundary
+
+        // Draw bedroom boundary
+        float bedRoomOffsetX = kitchenOffsetX + scaledKitchenWidth;
+        float bedRoomOffsetY = offsetY;
+
+        float scaledBedRoomWidth = bedRoomWidthInPoints * scale;
+        float scaledBedRoomHeight = bedRoomHeightInPoints * scale;
+
+        canvas.rectangle(bedRoomOffsetX, bedRoomOffsetY, scaledBedRoomWidth, scaledBedRoomHeight);
+        canvas.stroke();
+
+//        canvas.rectangle(
+//                offsetX + 0 * scale,
+//                offsetY + 0 * scale,
+//                scaledWidth * scale,
+//                scaledHeight * scale
+//        );
+//        canvas.stroke();
 
         pdf.close();
 
