@@ -1,5 +1,6 @@
 package com.github.sats17;
 
+import com.itextpdf.kernel.colors.ColorConstants;
 import com.itextpdf.kernel.geom.PageSize;
 import com.itextpdf.kernel.pdf.*;
 import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
@@ -42,6 +43,8 @@ public class DrawingRoom {
         float bedRoomHeight = roomHeight / 2;
         float bedRoomWidth = roomWidth / 3;
 
+        float doorSizeInMeter = 0.9144f; // 3 Feet
+        float doorSizeInPoints = metersToPoints(doorSizeInMeter);
 
         float roomWidthInPoints = metersToPoints(roomWidth);
         float roomHeightInPoints = metersToPoints(roomHeight);
@@ -98,6 +101,39 @@ public class DrawingRoom {
 
         canvas.rectangle(bedRoomOffsetX, bedRoomOffsetY, scaledBedRoomWidth, scaledBedRoomHeight);
         canvas.stroke();
+        // Done bedroom boundary
+
+        // Start doors
+        // Main door, hall
+        float mainDoorMoveToX = offsetX;
+        float mainDoorMoveToY = offsetY + scaledHallHeight;
+
+        float mainDoorLineToX = offsetX + (doorSizeInPoints * scale);
+        float mainDoorLineToY = mainDoorMoveToY; // Y line is similar to main moveToPoint
+
+        canvas
+                .setStrokeColor(ColorConstants.RED)
+                .setLineWidth(4f)
+                .moveTo(mainDoorMoveToX, mainDoorMoveToY)
+                .lineTo(mainDoorLineToX, mainDoorLineToY)
+                .stroke();
+
+        // hall door, hall
+        float hallDoorMoveToX = offsetX + scaledHallWidth;;
+        float hallDoorMoveToY = offsetY + (scaledHallHeight / 3);
+
+        float hallDoorLineToX = offsetX + scaledHallWidth;;
+        float hallDoorLineToY = hallDoorMoveToY + (doorSizeInPoints * scale); // Y line is similar to main moveToPoint
+
+        canvas
+                .setStrokeColor(ColorConstants.RED)
+                .setLineWidth(4f)
+                .moveTo(hallDoorMoveToX, hallDoorMoveToY)
+                .lineTo(hallDoorLineToX, hallDoorLineToY)
+                .stroke();
+
+
+
 
 //        canvas.rectangle(
 //                offsetX + 0 * scale,
