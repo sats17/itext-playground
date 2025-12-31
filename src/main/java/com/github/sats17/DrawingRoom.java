@@ -27,6 +27,8 @@ import java.io.File;
  *
  * After applying this transformation, all room elements can be drawn directly
  * using their original (x, y) values without additional offsets.
+ *
+ * Note: The boundaries of doors are static for now. Only items location can be dynamic.
  */
 public class DrawingRoom {
 
@@ -49,54 +51,73 @@ public class DrawingRoom {
 
 
         // ---- PAGE ----
-        float pageWidth = PageSize.A4.getWidth();   // 595
-        float pageHeight = PageSize.A4.getHeight(); // 842
+        float pageWidth = PageSize.A4.getWidth();   // 595 pdf points
+        float pageHeight = PageSize.A4.getHeight(); // 842 pdf points
 
         float pageCenterX = pageWidth / 2f;
         float pageCenterY = pageHeight / 2f;
 
-        // Adjust the canvas to move (0,0) from bottom left to middle part of PDF.
+        // Adjust the canvas to move (0,0) points from bottom left(default itext) to middle part of PDF.
         canvas.saveState();
         canvas.concatMatrix(1, 0, 0, 1, pageCenterX, pageCenterY);
 
 
         // Input and calculated static values ----
-        float roomWidth = 6.09f;   // 6 meters
-        float roomHeight = 4.26f;  // 4 meters
+        float totalWidth = 6.09f;   // 6 meters
+        float totalHeight = 4.26f;  // 4 meters
+        float totalWidthInPoints = metersToPoints(totalWidth);
+        float totalHeightInPoints = metersToPoints(totalHeight);
 
-        float hallHeight = roomHeight;
-        float hallWidth = roomWidth / 3;
+        float hallHeight = totalHeight;
+        float hallWidth = totalWidth / 3;
+        float hallHeightInPoints = metersToPoints(hallHeight);
+        float hallWidthInPoints = metersToPoints(hallWidth);
 
-        float kitchenHeight = roomHeight;
-        float kitchenWidth = roomWidth / 3;
+        float kitchenHeight = totalHeight;
+        float kitchenWidth = totalWidth / 3;
+        float kitchenHeightInPoints = metersToPoints(kitchenHeight);
+        float kitchenWidthInPoints = metersToPoints(kitchenWidth);
 
-        float bedRoomHeight = roomHeight / 2;
-        float bedRoomWidth = roomWidth / 3;
+        float bedRoomHeight = totalHeight / 2;
+        float bedRoomWidth = totalWidth / 3;
+        float bedRoomHeightInPoints = metersToPoints(bedRoomHeight);
+        float bedRoomWidthInPoints = metersToPoints(bedRoomWidth);
+
 
         float doorSizeInMeter = 0.9144f; // 3 Feet
         float doorSizeInPoints = metersToPoints(doorSizeInMeter);
 
-        float roomWidthInPoints = metersToPoints(roomWidth);
-        float roomHeightInPoints = metersToPoints(roomHeight);
+        float toiletWidthInMeter = 0.4572f; // 1.5 feet
+        float toiletHeightInMeter = 1.0668f; // 3.5 feet
+        float toiletDoorSizeInMeter = 0.39624f; // 1.3 feet
+        float toiletWidthInPoints = metersToPoints(toiletWidthInMeter);
+        float toiletHeightInPoints = metersToPoints(toiletHeightInMeter);
+        float toiletDoorSizeInPoints = metersToPoints(toiletDoorSizeInMeter);
 
-        float hallHeightInPoints = metersToPoints(hallHeight);
-        float hallWidthInPoints = metersToPoints(hallWidth);
+        float washBasinSpaceWidthInPoints = metersToPoints(0.4572f); // 1.5 feet
+        float washBasinSpaceHeightInPoints = metersToPoints(0.6096f); // 2 feet
 
-        float kitchenHeightInPoints = metersToPoints(kitchenHeight);
-        float kitchenWidthInPoints = metersToPoints(kitchenWidth);
+        float bathRoomWidthInMeter = 1.0668f; // 3.5 feet
+        float bathRoomHeightInMeter = 0.4572f; // 1.5 feet
+        float bathRoomDoorSizeInMeter = 0.39624f; // 1.3 feet
+        float bathRoomWidthInPoints = metersToPoints(bathRoomWidthInMeter);
+        float bathRoomHeightInPoints = metersToPoints(bathRoomHeightInMeter);
+        float bathRoomDoorSizeInPoints = metersToPoints(bathRoomDoorSizeInMeter);
 
-        float bedRoomHeightInPoints = metersToPoints(bedRoomHeight);
-        float bedRoomWidthInPoints = metersToPoints(bedRoomWidth);
 
-        float widthRatio = roomWidthInPoints / pageWidth;
-        float heightRatio = roomHeightInPoints / pageHeight;
-        float scale = 1f / Math.max(widthRatio, heightRatio);
         // Done with input and static calculated values.
+
+        // As we want to fit real world room sizes into A4 page we need to calculate scale value.
+        // Based on scale value we can draw the next items. Like making them fit into the page.
+        float widthRatio = totalWidthInPoints / pageWidth;
+        float heightRatio = totalHeightInPoints / pageHeight;
+        float scale = 1f / Math.max(widthRatio, heightRatio);
+        // Done calculating scale.
 
 
         // ---- DRAW OUTER BOUNDARY ----
-        float scaledWidth = roomWidthInPoints * scale;
-        float scaledHeight = roomHeightInPoints * scale;
+        float scaledWidth = totalWidthInPoints * scale;
+        float scaledHeight = totalHeightInPoints * scale;
 
         // This is the old offset calculation where we did not want our rectangle in cartesian graph way.
 //        float offsetX = (pageWidth - scaledWidth) / 2f;
@@ -140,10 +161,12 @@ public class DrawingRoom {
 
         canvas.rectangle(bedRoomOffsetX, bedRoomOffsetY, scaledBedRoomWidth, scaledBedRoomHeight);
         canvas.stroke();
+
         // Done bedroom boundary
 
         // Start doors
         // Main door, hall
+        canvas.saveState(); // Making sure that doors state does not cause issue with borders
         float mainDoorMoveToX = offsetX;
         float mainDoorMoveToY = offsetY + scaledHallHeight;
 
@@ -157,7 +180,7 @@ public class DrawingRoom {
                 .lineTo(mainDoorLineToX, mainDoorLineToY)
                 .stroke();
 
-        // hall door, hall
+        // hall + kitchen door
         float hallDoorMoveToX = offsetX + scaledHallWidth;;
         float hallDoorMoveToY = offsetY + (scaledHallHeight / 3);
 
@@ -170,17 +193,21 @@ public class DrawingRoom {
                 .moveTo(hallDoorMoveToX, hallDoorMoveToY)
                 .lineTo(hallDoorLineToX, hallDoorLineToY)
                 .stroke();
+        canvas.restoreState();
+        // Done drawing hall + kitchen door
+
+        // Bathroom draw
+        float toiletXOffset = kitchenOffsetX + (washBasinSpaceWidthInPoints * scale);
+        float toiletYOffset = kitchenOffsetY + (scaledHallHeight - (bathRoomHeightInPoints * scale) - (washBasinSpaceHeightInPoints * scale));
+
+        float scaledToiletWidth = toiletWidthInPoints * scale;
+        float scaledToiletHeight = toiletHeightInPoints * scale;
+
+        // We considered widht and height based on where door is, hence rectangle got different here. No worries.
+        canvas.rectangle(toiletXOffset, toiletYOffset, scaledToiletHeight, scaledToiletWidth);
+        canvas.stroke();
 
 
-
-
-//        canvas.rectangle(
-//                offsetX + 0 * scale,
-//                offsetY + 0 * scale,
-//                scaledWidth * scale,
-//                scaledHeight * scale
-//        );
-//        canvas.stroke();
 
         pdf.close();
 
