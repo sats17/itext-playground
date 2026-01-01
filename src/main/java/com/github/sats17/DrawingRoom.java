@@ -4,8 +4,15 @@ import com.itextpdf.kernel.colors.ColorConstants;
 import com.itextpdf.kernel.geom.PageSize;
 import com.itextpdf.kernel.pdf.*;
 import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
+import com.itextpdf.svg.converter.SvgConverter;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.InputStream;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 
 /**
  * This code generates a PDF representation of a room layout.
@@ -37,6 +44,31 @@ public class DrawingRoom {
         final double points = inches * 72;
         return (float) points;
     }
+
+    public static InputStream downloadSvgAsStream(String SVG_URL) {
+        try {
+            HttpClient client = HttpClient.newHttpClient();
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(SVG_URL))
+                    .GET()
+                    .build();
+
+            HttpResponse<byte[]> response =
+                    client.send(request, HttpResponse.BodyHandlers.ofByteArray());
+
+            if (response.statusCode() != 200) {
+                throw new RuntimeException("Failed to download SVG. HTTP status: "
+                        + response.statusCode());
+            }
+
+            return new ByteArrayInputStream(response.body());
+
+        } catch (Exception e) {
+            throw new RuntimeException("Error downloading SVG", e);
+        }
+    }
+
 
 
     public static void main(String[] args) throws Exception {
@@ -104,6 +136,12 @@ public class DrawingRoom {
         float bathRoomHeightInPoints = metersToPoints(bathRoomHeightInMeter);
         float bathRoomDoorSizeInPoints = metersToPoints(bathRoomDoorSizeInMeter);
 
+        String kitchenIconSVGUrl = "https://dev.w3.org/SVG/tools/svgweb/samples/svg-files/utensils.svg";
+        InputStream svgStream = downloadSvgAsStream(kitchenIconSVGUrl);
+        float kitchenIconXOffset = -50f;
+        float kitchenIconYOffset = -190f;
+        float kitchenIconHeight = 0.9144f; // 1 Feet
+        float kitchenIconWidth = 0.9144f;; // 1 Feet
 
         // Done with input and static calculated values.
 
@@ -206,6 +244,34 @@ public class DrawingRoom {
         // We considered widht and height based on where door is, hence rectangle got different here. No worries.
         canvas.rectangle(toiletXOffset, toiletYOffset, scaledToiletHeight, scaledToiletWidth);
         canvas.stroke();
+        // Bathroom done
+
+        // kitchen icon start
+        float kitchenIconWidthInPoints = metersToPoints(kitchenIconWidth);
+        float kitchenIconHeightInPoints = metersToPoints(kitchenIconHeight);
+
+        byte[] svgBytes = svgStream.readAllBytes();
+
+        InputStream metaStream = new ByteArrayInputStream(svgBytes);
+        SvgMetadata.Metadata meta = SvgMetadata.readMetadata(metaStream);
+        System.out.println(meta.toString());
+
+        InputStream drawStream = new ByteArrayInputStream(svgBytes);
+
+        float svgScale = (kitchenIconWidthInPoints * scale) / 102f;
+
+        /**
+         * SVG view box
+         * viewBox="minX minY width height"
+         * minX = Left edge of SVG coordinate space
+         * minY = Top edge of SVG coordinate space
+         * width = Width of SVG internal drawing
+         * height = Height of SVG internal drawing
+         */
+        canvas.saveState();
+        canvas.concatMatrix(svgScale, 0, 0, svgScale, kitchenIconXOffset, kitchenIconYOffset);
+        SvgConverter.drawOnCanvas(drawStream, canvas);
+
 
 
 
